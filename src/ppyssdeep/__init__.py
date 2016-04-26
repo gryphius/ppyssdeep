@@ -1,4 +1,5 @@
 import numpy as np
+from wagnerfischerpp import WagnerFischer
 
 FNV_PRIME = 0x01000193
 FNV_INIT  = 0x28021967
@@ -91,7 +92,63 @@ def ssdeep_hash(content):
 
     return ':'.join([str(bs),hash1,hash2])
 
+#from https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Longest_common_substring#Python_2
+def longest_common_substring(s1, s2):
+    m = [[0] * (1 + len(s2)) for i in xrange(1 + len(s1))]
+    longest, x_longest = 0, 0
+    for x in xrange(1, 1 + len(s1)):
+        for y in xrange(1, 1 + len(s2)):
+            if s1[x - 1] == s2[y - 1]:
+                m[x][y] = m[x - 1][y - 1] + 1
+                if m[x][y] > longest:
+                    longest = m[x][y]
+                    x_longest = x
+            else:
+                m[x][y] = 0
+    return s1[x_longest - longest: x_longest]
+
+def _likeliness(min_lcs, a, b):
+
+    if longest_common_substring(a,b)<min_lcs:
+        return 0
+
+    dist = WagnerFischer(a,b).cost
+    dist = int(dist * MAX_LENGTH / (len(a) + len(b)))
+    dist = int(100* dist/64)
+    if dist > 100:
+        dist = 100
+    return 100 - dist
+
+def ssdeep_compare(hashA, hashB, min_lcs = 7):
+    bsA,hs1A,hs2A = hashA.split(':') #blocksize, hash1, hash2
+    bsB,hs1B,hs2B = hashB.split(':')
+
+    like = 0
+
+    #block size comparison
+    if bsA == bsB:
+        #compare both hashes
+        like1 = _likeliness(min_lcs,hs1A, hs1B)
+        like2 = _likeliness(min_lcs, hs2A, hs2B)
+        like = max(like1,like2)
+    elif bsA == 2*bsB:
+        # Compare hash_bsA with hash_2*bsB
+        like = _likeliness( min_lcs, hs1A, hs2B );
+    elif 2*bsA == bsB:
+        # Compare hash_2*bsA with hash_bsB
+        like = _likeliness( min_lcs, hs2A, hs1B );
+    else : #nothing suitable to compare
+        like = 0
+    return like
+
+
 if __name__=='__main__':
     import sys
-    content=open(sys.argv[1]).read()
-    print ssdeep_hash(content)
+    content1=open('/tmp/file1.txt').read()
+    content2=open('/tmp/file2.txt').read()
+    hash1=ssdeep_hash(content1)
+    print hash1
+    hash2=ssdeep_hash(content2)
+    print hash2
+    similarity = ssdeep_compare(hash1,hash2)
+    print similarity
