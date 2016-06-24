@@ -122,7 +122,10 @@ def _likeliness(min_lcs, a, b):
 def ssdeep_compare(hashA, hashB, min_lcs = 7):
     bsA,hs1A,hs2A = hashA.split(':') #blocksize, hash1, hash2
     bsB,hs1B,hs2B = hashB.split(':')
-
+    
+    bsA = int(bsA)
+    bsB = int(bsB)
+    
     like = 0
 
     #block size comparison
