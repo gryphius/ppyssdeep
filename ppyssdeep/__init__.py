@@ -1,5 +1,5 @@
 import numpy as np
-from wagnerfischerpp import WagnerFischer
+from ppyssdeep.wagnerfischerpp import WagnerFischer
 
 FNV_PRIME = 0x01000193
 FNV_INIT  = 0x28021967
